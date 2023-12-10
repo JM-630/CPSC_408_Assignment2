@@ -1,5 +1,5 @@
 # Assigment 2
-* Receives input from the user to perform various operations such as:
+Receives input from the user to perform various operations such as:
 * 
 
 ## Identifying Information
