@@ -25,6 +25,7 @@ N/A
 * Orders.csv
 * Products.csv
 * Suppliers.csv
+* Import.txt
 
 ## References
 * The site, https://www.tutorialspoint.com/sql/sql-stored-procedures.htm, was used to help create the stored procedures
