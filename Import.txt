@@ -1,0 +1,23 @@
+-- Inserting data into Suppliers
+INSERT INTO Suppliers (SupplierName, ContactName, Address, City, PostalCode,
+Country, Phone) VALUES
+('EcoFriendly Ltd', 'John Doe', '123 Green Road', 'EcoCity', 'EC123', 'Ecoland',
+'123-456-7890'),
+('NatureGoods Inc', 'Jane Smith', '456 Natural Way', 'GreenVille', 'GV456',
+'Greenland', '987-654-3210'),
+('EcoWorld Inc', 'Kalvin Philips', '385 Green Road', 'Leeds', 'ET333',
+'England', '345-674-9045'),
+('Green Clothes Ltd', 'Scott Carson', '885 Earth Drive', 'Whitehaven', 'ET721',
+'England', '544-114-5082'),
+('Tree Inc', 'Bernardo Silva', '218 Eco St', 'Lisbon', 'GV711',
+'Portugal', '312-677-2333'),
+('Forest Way Ltd', 'Zack Steffen', '862 Green St', 'Coatesville', 'EC519',
+'United States', '117-699-2301'),
+('Ocean Waves Inc', 'Tommy Doyle', '229 Ocean St', 'Manchester', 'ET693',
+'England', '679-421-1768'),
+('Plant Forward Ltd', 'James McAtee', '781 Plant Road', 'Salford', 'ET863',
+'England', '716-611-4511'),
+('New World Inc', 'Liam Delap', '399 World Road', 'Derby', 'ET113',
+'England', '577-221-1115'),
+('Grass Roots Inc', 'Luke Mbete', '474 Root Drive', 'London', 'ET227',
+'England', '777-921-8864');
