@@ -1,0 +1,315 @@
+import mysql.connector
+
+# Used to check the number of days in a given month
+import calendar
+
+# Stored Procedure to update quantity of a product after an order is placed
+# CREATE PROCEDURE UpdateStockQuantity(IN NewProductID int, IN NewQuantity int)
+# BEGIN
+#     UPDATE Products
+#     SET UnitsInStock = UnitsInStock - NewQuantity
+#     WHERE ProductID = NewProductID;
+# END;
+
+
+
+# Stored Procedure to add a new order
+# CREATE PROCEDURE AddNewOrder(IN NewCustomerID int, IN NewOrderDate date, IN NewShipDate date,
+#                                              IN NewShipAddress varchar(255), IN NewShipCity varchar(100),
+#                                              IN NewShipPostalCode varchar(20), IN NewShipCountry varchar(100),
+#                                              IN NewProductID int, IN NewQuantity int)
+# BEGIN
+#     DECLARE NewOrderID INT;
+#
+#     INSERT INTO Orders (
+#         CustomerID,
+#         OrderDate,
+#         ShipDate,
+#         ShipAddress,
+#         ShipCity,
+#         ShipPostalCode,
+#         ShipCountry
+#     ) VALUES (
+#         NewCustomerID,
+#         NewOrderDate,
+#         NewShipDate,
+#         NewShipAddress,
+#         NewShipCity,
+#         NewShipPostalCode,
+#         NewShipCountry
+#     );
+#
+#     SET NewOrderID = LAST_INSERT_ID();
+#
+#     INSERT INTO OrderDetails (
+#         OrderID,
+#         ProductID,
+#         Quantity,
+#         UnitPrice
+#     ) VALUES (
+#         NewOrderID,
+#         NewProductID,
+#         NewQuantity,
+#         (SELECT UnitPrice FROM Products WHERE ProductID = NewProductID)
+#     );
+#
+#     CALL UpdateStockQuantity(NewProductID,NewQuantity);
+#
+# END;
+
+# connects to database
+def connect_to_database():
+    try:
+        conn = mysql.connector.connect(
+            host='localhost',
+            port='3306',
+            user='root',
+            passwd='change-me',
+            database='FSE_EngStore_DB'
+        )
+        return conn
+    except mysql.connector.Error as e:
+        print(f"Error conecting to MySQL: {e}")
+        return None
+
+# Lists all products that are out of stock
+def list_products_out_of_stock(conn):
+    try:
+        cursor = conn.cursor()
+        query = "SELECT * FROM Products WHERE UnitsInStock = 0"
+        cursor.execute(query)
+        tuple1 = cursor.fetchall()
+        if len(tuple1) == 0:
+            print("All products are still in stock.")
+        else:
+            query = "SELECT * FROM Products WHERE UnitsInStock = 0"
+            cursor.execute(query)
+            for (ProductID, ProductName, SupplierID, Category, UnitPrice, UnitsInStock) in cursor:
+                print(f"ID: {ProductID}, Product Name: {ProductName}, SupplierID: {SupplierID}, Category: {Category}, UnitPrice: {UnitPrice}, UnitsInStock: {UnitsInStock}")
+    except mysql.connector.Error as e:
+        print(f"Error creating a record: {e}")
+
+# Find the total number of orders placed by each customer
+def find_total_orders(conn):
+    try:
+        cursor = conn.cursor()
+        query = "SELECT Count(*) as TotalOrders, Customers.CustomerID, Customers.CustomerName, Customers.ContactName FROM Orders INNER JOIN Customers ON Orders.CustomerID=Customers.CustomerID GROUP BY Customers.CustomerID"
+        cursor.execute(query)
+        for (TotalOrders, CustomerID, CustomerName, ContactName) in cursor:
+            print(f"TotalOrders: {TotalOrders}, CustomerID: {CustomerID}, CustomerName: {CustomerName}, ContactName: {ContactName}")
+    except mysql.connector.Error as e:
+        print(f"Error creating a record: {e}")
+
+# Display the details of the most expensive product ordered in each order
+def display_most_expensive(conn):
+    try:
+        cursor = conn.cursor()
+        query = "SELECT o.OrderID, p.ProductID, p.ProductName, od.UnitPrice, od.Quantity FROM Orders o JOIN OrderDetails od on o.OrderID = od.OrderID JOIN Products p ON od.ProductID = p.ProductID WHERE (o.OrderID, od.UnitPrice) IN (SELECT OrderID, MAX(UnitPrice) FROM OrderDetails GROUP BY OrderID) ORDER BY o.OrderID"
+        cursor.execute(query)
+        for (OrderId, ProductID, ProductName, UnitPrice, Quantity) in cursor:
+            print(f"OrderID: {OrderId}, ProductID: {ProductID}, ProductName: {ProductName}, UnitPrice: {UnitPrice}, Quantity: {Quantity}")
+    except mysql.connector.Error as e:
+        print(f"Error creating a record: {e}")
+
+# Retrieve a list of products that have never been ordered
+def retrieve_products_not_ordered(conn):
+    try:
+        cursor = conn.cursor()
+        query = "SELECT Products.ProductID,Products.ProductName FROM Products WHERE NOT EXISTS (SELECT * FROM OrderDetails WHERE Products.ProductID = OrderDetails.ProductID)"
+        cursor.execute(query)
+        for (ProductID, ProductName) in cursor:
+            print(f"ProductID: {ProductID}, ProductName: {ProductName}")
+    except mysql.connector.Error as e:
+        print(f"Error creating a record: {e}")
+
+# Show the total revenue generated by each supplier
+def show_total_revenue_supplier(conn):
+    try:
+        cursor = conn.cursor()
+        query = "SELECT SUM(Products.UnitPrice * OrderDetails.Quantity) AS TotalRevenue, Suppliers.SupplierID, Suppliers.SupplierName FROM Suppliers JOIN Products ON Suppliers.SupplierID = Products.SupplierID JOIN OrderDetails ON Products.ProductID = OrderDetails.ProductID JOIN Orders ON OrderDetails.OrderID = Orders.OrderID GROUP BY Suppliers.SupplierID, Suppliers.SupplierName"
+        cursor.execute(query)
+        for (TotalRevenue, SupplierID, SupplierName) in cursor:
+            print(f"TotalRevenue: {TotalRevenue}, SupplierID: {SupplierID}, SupplierName: {SupplierName}")
+    except mysql.connector.Error as e:
+        print(f"Error creating a record: {e}")
+
+# Adds a new order to the database
+def add_new_order(conn):
+    try:
+        cursor = conn.cursor()
+        # Gets the customer id and makes sure it is found in the table before proceeding
+        CID = input("Enter the Customer ID:")
+        cursor.execute("SELECT * FROM Customers")
+        numRows = cursor.fetchall()
+        while (True):
+            if (CID.isnumeric() == False):
+                CID = input("Please enter a numerical value\n")
+                continue
+            if (1 <= int(CID) <= len(numRows)):
+                break
+            else:
+                CID = input("Customer ID does not match requirements, enter a different value within range\n")
+
+        # Gets the order year and makes sure it is logical before proceeding
+        OY = input("Enter the Order Year:")
+        while (True):
+            if (OY.isnumeric() == False):
+                OY = input("Please enter a numerical value\n")
+                continue
+            if (len(OY) == 4):
+                break
+            else:
+                OY = input("Year does not match requirements, enter a different value that is 4 digits long\n")
+
+        # Gets the order month and makes sure it is logical before proceeding
+        OM = input("Enter the Order Month:")
+        while (True):
+            if (OM.isnumeric() == False):
+                OM = input("Please enter a numerical value\n")
+                continue
+            if (1 <= int(OM) <= 12):
+                break
+            else:
+                OM = input("Month does not match requirements, enter a different value that is between 1 and 12\n")
+
+        # Gets the max amount of days for a given month to make sure the provided order day input is accurate
+        maxOrderDays = calendar.monthrange(int(OY), int(OM))[1]
+        OD = input("Enter the Order Day:")
+        while (True):
+            if (OD.isnumeric() == False):
+                OD = input("Please enter a numerical value\n")
+                continue
+            if (1 <= int(OD) <= maxOrderDays):
+                break
+            else:
+                OD = input(f"Month does not match requirements, enter a different value that is between 1 and {maxOrderDays}\n")
+
+        # Converts the provided inputs for the order date into a date format
+        orderDate = OY + "-" + OM + "-" + OD
+
+        # Gets the shipping year and makes sure it is logical before proceeding
+        SY = input("Enter the Shipping Year:")
+        while (True):
+            if (SY.isnumeric() == False):
+                SY = input("Please enter a numerical value\n")
+                continue
+            if (len(SY) == 4):
+                break
+            else:
+                SY = input("Year does not match requirements, enter a different value that is 4 digits long\n")
+
+        # Gets the shipping month and makes sure it is logical before proceeding
+        SM = input("Enter the Shipping Month:")
+        while (True):
+            if (SM.isnumeric() == False):
+                SM = input("Please enter a numerical value\n")
+                continue
+            if (1 <= int(SM) <= 12):
+                break
+            else:
+                SM = input("Month does not match requirements, enter a different value that is between 1 and 12\n")
+
+        # Gets the max amount of days for a given month to make sure the provided shipping day input is accurate
+        maxShipDays = calendar.monthrange(int(OY), int(OM))[1]
+        SD = input("Enter the Shipping Day:")
+        while (True):
+            if (SD.isnumeric() == False):
+                SD = input("Please enter a numerical value\n")
+                continue
+            if (1 <= int(SD) <= maxShipDays):
+                break
+            else:
+                SD = input(f"Month does not match requirements, enter a different value that is between 1 and {maxShipDays}\n")
+
+        # Converts the provided inputs for the shipping date into a date format
+        shipDate = SY + "-" + SM + "-" + SD
+
+        # Gets the shipping address, city, postcalcode, and country by using the customer's id
+        query1 = f"SELECT Address, City, PostalCode, Country FROM Customers WHERE CustomerID = {CID}"
+        cursor.execute(query1)
+        tuple1 = cursor.fetchone()
+        SA = tuple1[0]
+        SC = tuple1[1]
+        SPC = tuple1[2]
+        SCY = tuple1[3]
+
+        # Gets the product id and makes sure it is found in the table before proceeding
+        PID = input("Enter the Product ID:")
+        cursor.execute("SELECT * FROM Products")
+        numPRows = cursor.fetchall()
+        while (True):
+            if (PID.isnumeric() == False):
+                PID = input("Please enter a numerical value\n")
+                continue
+            if (1 <= int(PID) <= len(numPRows)):
+                break
+            else:
+                PID = input("Product ID does not match requirements, enter a different value within range\n")
+
+        # Finds the remaining quantity for the product using its id
+        cursor.execute(f"SELECT UnitsInStock FROM Products WHERE ProductID = {PID}")
+        tuple2 = cursor.fetchone()
+        print(tuple2)
+        maxNum = tuple2[0]
+        Q = input ("Enter the quantity of the order\n")
+        while (True):
+            if (Q.isnumeric() == False):
+                Q = input("Please enter a numerical value\n")
+                continue
+            if (1 <= int(Q) <= maxNum):
+                break
+            else:
+                Q = input(f"Quantity does not match requirements, enter a different value within range of 1 to {maxNum}\n")
+        tuple3 = (CID, orderDate, shipDate, SA, SC, SPC, SCY, PID, Q)
+
+        # Call the stored procedure for adding a new order with a tuple containing the previously found values
+        cursor.callproc('AddNewOrder', tuple3)
+        conn.commit()
+        print("Order has been added.")
+    except mysql.connector.Error as e:
+        print(f"Error creating a record: {e}")
+
+def main():
+    conn = connect_to_database()
+    if conn:
+        exit = False
+        while (exit != True):
+
+            user = input(
+                '\nType "L" to list all products that are out of stock\n'
+                'Type "F" to find the total number of orders placed by each customer\n'
+                'Type "D" to display the details of the most expensive product ordered in each order\n'
+                'Type "R" to retrieve a list of products that have never been ordered\n'
+                'Type "S" to show the total revenue generated by each supplier\n'
+                'Type "A" to add a new order\n'
+                'Else type "E" to exit the program\n')
+
+            if (user.lower() == "l"):
+                list_products_out_of_stock(conn)
+
+            elif (user.lower() == "f"):
+                find_total_orders(conn)
+
+            elif (user.lower() == "d"):
+                display_most_expensive(conn)
+
+            elif (user.lower() == "r"):
+                retrieve_products_not_ordered(conn)
+
+            elif (user.lower() == "s"):
+                show_total_revenue_supplier(conn)
+
+            elif (user.lower() == 'e'):
+                 exit = True
+
+            elif (user.lower() == 'a'):
+                add_new_order(conn)
+
+            else:
+                print("Please enter a valid input from the following options:")
+
+
+        conn.close()
+
+if __name__ == "__main__":
+    main()
