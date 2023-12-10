@@ -29,3 +29,6 @@ N/A
 ## References
 * The site, https://www.tutorialspoint.com/sql/sql-stored-procedures.htm, was used to help create the stored procedures
 * The following site, https://note.nkmk.me/en/python-days-weeks-of-the-month/, was used to validate if a given day was within the range for that month
+
+## Build Instructions
+* Using the Import.txt file, insert the records into the table in order to begin using the program
