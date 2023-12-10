@@ -260,10 +260,10 @@ def add_new_order(conn):
                 break
             else:
                 Q = input(f"Quantity does not match requirements, enter a different value within range of 1 to {maxNum}\n")
-        tuple3 = (CID, orderDate, shipDate, SA, SC, SPC, SCY, PID, Q)
+        inputVals = (CID, orderDate, shipDate, SA, SC, SPC, SCY, PID, Q)
 
         # Call the stored procedure for adding a new order with a tuple containing the previously found values
-        cursor.callproc('AddNewOrder', tuple3)
+        cursor.callproc('AddNewOrder', inputVals)
         conn.commit()
         print("Order has been added.")
     except mysql.connector.Error as e:
