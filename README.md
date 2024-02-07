@@ -10,7 +10,6 @@ Receives input from the user to perform the following operations on an SQL datab
 ## Identifying Information
 
 * Name: Joaquin Murillo
-* Student ID: 2402264
 * Email: jomurillo@chapman.edu
 * Course: CPSC-408-02
 * Assignment: MySQL
